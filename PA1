@@ -1,0 +1,60 @@
+
+Prediction of exercise style using recorded data from personal activity monitoring devices
+Michael
+Sunday, April 26, 2015
+Overview: Data from 6 individuals was voluntarily recorded using a personal activity monitoring device such as Fitbit or Jawbone. Among the volunteers, 5 different weight training styles were assigned and performed while the device was recording data. A machine learning algorithm is built to evaluate 40 variables on the training data set and cross validated to accurately determine exercise style (‘classe’) in the test data set.
+The following code uses the training data to assess a subset of 40 variables (containing the words accel, gyros, magnet, and total) out of 100+ listed. These variables were selected and evaluated for creatingUsing random forest, a prediction algorithm is generated on the training dataset to determine which of the 5 weight training styles(‘classe’ variable) was performed by the volunteer. The estimated error(0.83%) rate and confusion matrix for the prediction model is reported below.
+
+library(caret)
+
+## Loading required package: lattice
+## Loading required package: ggplot2
+
+library(ggplot2)
+library(randomForest)
+
+## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.
+
+library(knitr)
+data <- read.csv("pml-training.csv")
+testdata <- read.csv("pml-testing.csv")
+var1 <- as.numeric(grep("^accel", names(data)))
+var2 <- as.numeric(grep("^gyros", names(data)))
+var3 <- as.numeric(grep("^magnet", names(data)))
+var4 <- as.numeric(grep("^total", names(data)))
+varall <- c(var1, var2, var3, var4)
+predictors <- data[,varall]
+classe <- data$classe
+training <- cbind(predictors, classe)
+set.seed(123)
+modFitRF <- randomForest(training$classe ~ ., data = training,proximity = TRUE, mtry=2)
+print(modFitRF)
+
+## 
+## Call:
+##  randomForest(formula = training$classe ~ ., data = training,      proximity = TRUE, mtry = 2) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 2
+## 
+##         OOB estimate of  error rate: 0.83%
+## Confusion matrix:
+##      A    B    C    D    E class.error
+## A 5572    3    2    2    1 0.001433692
+## B   25 3756   16    0    0 0.010797998
+## C    0   22 3400    0    0 0.006428989
+## D    2    0   76 3133    5 0.025808458
+## E    0    1    1    7 3598 0.002495148
+
+The testing dataset(a separate data partition of the larger dataset) is used to cross validate the machine learning algorithm. There are 20 samples in the testdata set and OOB (out of bag) error estimation is 0.83 out of every 100 samples. This is approximate to the out of sample error (generalization error) and indicates the potential for test data samples being classified as the wrong ‘classe’. The test data set can be predicted with high accuracy because of low sample error; predictions of all 20 sample classifications are accurately classified after data submission.
+
+pred <- predict(modFitRF, newdata=testdata)
+print(pred)
+
+##  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+##  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+## Levels: A B C D E
+
+qplot(pred, problem_id, data=testdata, main="Testdata predictions", xlab="classe")
+
